@@ -5,7 +5,6 @@ package server
 
 import (
 	"bufio"
-	"log"
 	"net"
 	"strconv"
 )
@@ -45,21 +44,25 @@ func (p *Package) EndPoping() {
 	p.Reading = false
 }
 
-func (p *Package) Poping(handler MsgHandler) error {
+func (p *Package) Poping(handler MsgHandler) (err error) {
+	nb := make(chan byte)
+	done := make(chan bool)
 	lens := []byte{}
 	bs := []byte{}
 	var l int
-	nb := make(chan byte)
-	done := make(chan bool)
 	p.Reading = true
 	go func() {
+		defer func() {
+			if e := recover(); e != nil {
+				err = e.(error)
+				done <- true
+			}
+		}()
 		reader := bufio.NewReader(p.conn)
 		for {
 			b, err := reader.ReadByte()
 			if err != nil {
-				log.Print(err)
-				done <- true
-				break
+				panic(err)
 			}
 			if !p.Reading {
 				done <- true
@@ -71,7 +74,7 @@ func (p *Package) Poping(handler MsgHandler) error {
 	for {
 		select {
 		case <-done:
-			return nil
+			return
 		case b := <-nb:
 			switch p.stat {
 			case STAT_START:
@@ -121,5 +124,5 @@ func (p *Package) Poping(handler MsgHandler) error {
 	close(nb)
 	close(done)
 
-	return nil
+	return
 }

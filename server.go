@@ -28,7 +28,9 @@ func NewConnHandler(conn net.Conn) *ConnHandler {
 }
 
 func (handler *ConnHandler) Reading(h MsgHandler) error {
-	return handler.pack.Poping(h)
+	err := handler.pack.Poping(h)
+	log.Print("error ", err)
+	return err
 }
 
 func (handler *ConnHandler) Terminate() {
